@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from style import subheaderStyle, kpiStyle
 
 # Set Page Configuration
 st.set_page_config(
@@ -78,28 +79,132 @@ average_pizza_per_order = total_pizza_sold / total_orders
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
-    st.metric('Total Revenue', f'${total_revene:,.2f}')
+    st.markdown(kpiStyle('Total Revenue', f'${total_revene:,.2f}', '💵'),
+            unsafe_allow_html=True)
     
 with col2:
-    st.metric('Total Pizza Sold', f'{total_pizza_sold:,}')
+    st.markdown(kpiStyle('Total Pizza Sold', f'{total_pizza_sold:,.2f}', '🍕'),
+            unsafe_allow_html=True)
 
 with col3:
-    st.metric('Total Orders', f'{total_orders:,}')
+    st.markdown(kpiStyle('Total Orders', f'{total_orders:,.2f}', '🧑‍🦱'),
+                unsafe_allow_html=True)
 
 with col4:
-    st.metric('Average Order Value', f'{average_order_value:,.2f}')
+    st.markdown(kpiStyle('Average Order Value', f'{average_order_value:,.2f}', '🦁'),
+                unsafe_allow_html=True)
 
 with col5:
-    st.metric('Average Pizza Per Order', f'${average_pizza_per_order:,.2f}')
+    st.markdown(kpiStyle('Average Pizza/Order', f'${average_pizza_per_order:,.2f}', '💸'),
+                unsafe_allow_html=True)
+    
 
-
-# Sales by day of week
-day_sales = filter_data.groupby('Order_Day')['total_price'].sum().reset_index()
-st.subheader('Sales by Day of Week')
-fig = px.bar(
-    day_sales,
-    x='Order_Day',
-    y='total_price',
-    labels={'Order_Day': 'Weekdays', 'total_price': 'Total Sales'}
+# Tabs for Visualizations
+tab_overview, tab_time, tab_top_bottom, raw_data = st.tabs(
+    ['Overview', 'Time Analysis', 'Top/Bottom', 'Raw Data']
 )
-st.plotly_chart(fig)
+
+
+with tab_overview:
+    left, right = st.columns(2)
+    
+    with left:
+        # % of Sales by Category
+        cat_sales_pct = filter_data.groupby('pizza_category')['total_price'].sum().reset_index()
+        st.markdown(subheaderStyle('Pct(%) of Sales by Category'), 
+                        unsafe_allow_html=True)
+        
+        fig = px.pie(
+            cat_sales_pct,
+            names='pizza_category',
+            values='total_price',
+            hole=0.7,
+            labels={'pizza_cateogry': 'Pizza Category', 'total_price': 'Total Price'}
+        )
+        st.plotly_chart(fig, use_container_width=True)
+                
+    with right:
+        # % Sales by Pizza Size & Category
+        size_cat_sales = filter_data.groupby(['pizza_size', 'pizza_category'])['total_price'].sum().reset_index()
+        st.markdown(subheaderStyle('% Sales by Pizza Size & Category'), 
+                unsafe_allow_html=True)
+        fig = px.bar(
+            size_cat_sales,
+            x='pizza_size',
+            y='total_price',
+            color='pizza_category',
+            barmode='group',
+            labels = {'pizza_cateogry': 'Pizza Category', 'total_price': 'Total Price', 'pizza_size': 'Pizza Size'}
+            # color_discrete_sequence=px.colors.sequential.BuPu_r
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+
+
+with tab_time:
+    left, right = st.columns(2)
+    
+    with left:
+        # Sales by day of week
+        day_sales = filter_data.groupby('Order_Day')['total_price'].sum().reset_index()
+        # st.subheader('Sales by Day of Week')
+
+        st.markdown(subheaderStyle('Sales by Day of Week'), 
+                    unsafe_allow_html=True)
+
+        fig = px.bar(
+            day_sales,
+            x='Order_Day',
+            y='total_price',
+            color_continuous_scale='blues',
+            labels={'Order_Day': 'Weekdays', 'total_price': 'Total Sales'}
+        )
+        st.plotly_chart(fig)
+    
+    with right:
+        hour_sales = filter_data.groupby('Order_Hour')['total_price'].sum().reset_index()
+        
+        st.markdown(subheaderStyle('Sales by Hour of Day'), 
+                            unsafe_allow_html=True)
+        
+        fig = px.line(
+            hour_sales,
+            x='Order_Hour',
+            y='total_price',
+            markers='o'
+        )
+        fig.update_xaxes(dtick=1)
+        st.plotly_chart(fig, use_container_width=True)
+        
+    # Monthly Sales
+    monthly_sales = filter_data.groupby('Order_Month').agg(
+        Total_Price = ('total_price', 'sum'),
+        Total_Orders = ('order_id', 'nunique')
+    ).reset_index()
+    
+    st.markdown(subheaderStyle('Monthly Sales and Revenue'), 
+                                unsafe_allow_html=True)
+    
+    fig = px.line(
+        monthly_sales,
+        x='Order_Month',
+        y='Total_Price',
+        markers='o'
+    )
+    
+    fig.add_bar(
+        x=monthly_sales['Order_Month'],
+        y=monthly_sales['Total_Orders'],
+        name='Orders',
+        yaxis='y2',
+        opacity=0.60
+    )
+    
+    fig.update_layout(
+        yaxis=dict(title='Total Price'),
+        yaxis2=dict(title='Orders', overlaying='y', side='right'),
+        legend=dict(orientation='h', y=1.1),
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
