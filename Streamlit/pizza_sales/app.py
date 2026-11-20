@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 from style import subheaderStyle, kpiStyle, headerStyle
 
 # Set Page Configuration
@@ -9,6 +10,8 @@ st.set_page_config(
     page_icon=':pizza:',
     layout='wide'
 )
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # Read Data
 @st.cache_data
@@ -39,7 +42,7 @@ def clean_data(df:pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-df_raw = load_data('pizza_sales.csv')
+df_raw = load_data(BASE_DIR / 'pizza_sales.csv')
 df = clean_data(df_raw)
 
 st.markdown(headerStyle('Pizza Sales Dashboard'), 
