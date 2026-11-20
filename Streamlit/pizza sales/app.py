@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from style import subheaderStyle, kpiStyle
+from style import subheaderStyle, kpiStyle, headerStyle
 
 # Set Page Configuration
 st.set_page_config(
@@ -42,7 +42,8 @@ def clean_data(df:pd.DataFrame) -> pd.DataFrame:
 df_raw = load_data('pizza_sales.csv')
 df = clean_data(df_raw)
 
-st.header('Pizza Sales Dashboard')
+st.markdown(headerStyle('Pizza Sales Dashboard'), 
+            unsafe_allow_html=True)
 
 # Sidebar
 st.sidebar.header('Filter Data')
@@ -68,6 +69,10 @@ filter_data = df[
     (df['pizza_size'].isin(size_data)) &
     (df['pizza_category'].isin(category_data))
 ]
+
+if filter_data.empty:
+    st.warning('No data selected. Select data from sidebar.')
+    st.stop()
 
 # KPI
 total_revene = filter_data['total_price'].sum()
@@ -139,6 +144,22 @@ with tab_overview:
         )
         st.plotly_chart(fig, use_container_width=True)
 
+    st.divider()
+    # Tree Map
+    st.markdown(subheaderStyle('Tree Map'), 
+                        unsafe_allow_html=True)
+
+    tree = (
+        filter_data.groupby(['pizza_category', 'pizza_size', 'pizza_name'])['total_price'].sum().reset_index()
+    )
+    
+    fig = px.treemap(
+        tree,
+        path = ['pizza_category', 'pizza_size', 'pizza_name'],
+        values = 'total_price'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
 
 
 with tab_time:
@@ -208,3 +229,62 @@ with tab_time:
     )
     
     st.plotly_chart(fig, use_container_width=True)
+
+# Top and Bottom Sales Pizza
+with tab_top_bottom:
+    top_n = st.slider('How many pizza you want to show: ', min_value = 3, max_value = 10, value=5)
+    left, right = st.columns(2)
+    
+    # Top 5 Best Selling Pizzas
+    with left:
+        st.markdown(subheaderStyle(f'Top {top_n} Best Selling Pizza'), 
+                                        unsafe_allow_html=True)
+        top_5 = filter_data.groupby('pizza_name')['total_price'].sum().reset_index().sort_values(
+            by='total_price', ascending=False
+        ).head(top_n)
+        
+        fig = px.bar(
+            top_5,
+            x = 'total_price',
+            y='pizza_name',
+            labels = {'pizza_name': 'Pizza Name', 'total_price': 'Total Revenue ($)'},
+            color='total_price',
+            color_continuous_scale='blues'
+        )
+        fig.update_layout(coloraxis_showscale=False)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with right:
+        st.markdown(subheaderStyle(f'Bottom {top_n} Least Selling Pizza'),
+                    unsafe_allow_html=True)
+        
+        bottom_5 = filter_data.groupby('pizza_name')['total_price'].sum().reset_index().sort_values(
+                    by='total_price', ascending=True
+                ).head(top_n)
+        
+        fig = px.bar(
+            bottom_5,
+            x='total_price',
+            y='pizza_name',
+            labels = {'pizza_name': 'Pizza Name', 'total_price': 'Total Revenue ($)'},
+            color='total_price',
+            color_continuous_scale='greens'
+        )
+        fig.update_layout(coloraxis_showscale=False)
+        st.plotly_chart(fig, use_container_width=True)
+
+with raw_data:
+    st.markdown(subheaderStyle('Pizza Sales Data - 2015'), unsafe_allow_html=True)
+    
+    form_data = df.drop(columns = ['Order_Hour', 'Order_Day', 'Order_Month', 'month_num'])
+    
+    with st.form('Submit Form'):
+        search_text = st.text_input('Search Data', placeholder='Eg. The Hawaiian Pizza')    
+        submitted = st.form_submit_button('Search🔍')
+        
+        if submitted or search_text:
+            form_data[
+                form_data['pizza_name'].str.contains(search_text, case=False, na=False)
+            ]
+        else:
+            form_data

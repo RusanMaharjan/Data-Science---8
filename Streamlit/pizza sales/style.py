@@ -6,9 +6,23 @@ def subheaderStyle(header):
             font-weight: bold;
             font-family: Arial;
             text-align: center;
+            border-bottom: 1px solid #e3d3e3;
         '>
             {header}
         </div>        
+    '''
+
+def headerStyle(header, icon='🍕'):
+    return f'''
+        <div style='
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #e3d3e3;
+            margin-bottom: 25px;
+        '>
+            {header}{icon}
+        </div>
     '''
 
 
