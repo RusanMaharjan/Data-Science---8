@@ -42,6 +42,9 @@ def clean_data(df:pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+# BASE_DIR = Path(__file__).resolve().parent
+# from pathlib import Path
+
 df_raw = load_data(BASE_DIR / 'pizza_sales.csv')
 df = clean_data(df_raw)
 
