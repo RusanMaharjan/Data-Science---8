@@ -1,12 +1,19 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title='Cardiovascular Disease Prediction'
+    page_title='Cardiovascular Disease Prediction',
+    layout='wide'
 )
 
 def Home():
     st.Page('home.py', title='Home')
     st.header('Home Page')
+    
+    
+
+    logistic, svm = st.tabs([
+        'Logistics', 'SVM'
+    ])
     
 pages = {
     "Home": {
